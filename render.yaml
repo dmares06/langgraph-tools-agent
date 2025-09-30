@@ -1,13 +1,11 @@
 services:
   - type: web
-    name: suite-cre-langgraph-agent
+    name: langgraph-tools-agent
     runtime: python
     plan: starter  # or free tier
     buildCommand: pip install uv && uv sync
-    startCommand: uv run langgraph start --host 0.0.0.0 --port $PORT
+    startCommand: uv run langgraph start --host 0.0.0.0 --port $PORT  # Changed dev to start
     envVars:
-      - key: PORT
-        value: 8080
       - key: DATABASE_URL
         sync: false  # Add manually in dashboard
       - key: SUPABASE_URL
@@ -17,5 +15,21 @@ services:
       - key: OPENAI_API_KEY
         sync: false
       - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: FIRECRAWL_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: SERP_API_KEY
+        sync: false
+      - key: LANGCHAIN_API_KEY
+        sync: false
+      - key: LANGSMITH_TRACING
+        sync: false
+      - key: LANGSMITH_ENDPOINT
+        sync: false
+      - key: LANGSMITH_API_KEY
+        sync: false
+      - key: LANGSMITH_PROJECT
         sync: false
     healthCheckPath: /health
