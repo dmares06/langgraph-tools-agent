@@ -1,120 +1,82 @@
-import logging
-import aiohttp
-from typing import Dict, Optional, Any
-from langchain_core.runnables import RunnableConfig
-from langgraph.config import get_store
+"""API key and token management utilities."""
 
+import os
+from typing import Dict, Optional
 
-async def get_mcp_access_token(
-    supabase_token: str,
-    base_mcp_url: str,
-) -> Optional[Dict[str, Any]]:
+def fetch_tokens(config: Dict) -> Dict[str, str]:
     """
-    Exchange a Supabase token for an MCP access token.
-
+    Fetch API tokens from config or environment variables.
+    
     Args:
-        supabase_token: The Supabase token to exchange
-        base_mcp_url: The base URL for the MCP server
-
+        config: Configuration dictionary that may contain apiKeys
+    
     Returns:
-        The token data as a dictionary if successful, None otherwise
+        Dictionary of provider: api_key mappings
     """
-    try:
-        # Exchange Supabase token for MCP access token
-        form_data = {
-            "client_id": "mcp_default",
-            "subject_token": supabase_token,
-            "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
-            "resource": base_mcp_url.rstrip("/") + "/mcp",
-            "subject_token_type": "urn:ietf:params:oauth:token-type:access_token",
-        }
+    api_keys = config.get("configurable", {}).get("apiKeys", {})
+    
+    tokens = {
+        "openai": api_keys.get("openai") or os.getenv("OPENAI_API_KEY"),
+        "anthropic": api_keys.get("anthropic") or os.getenv("ANTHROPIC_API_KEY"),
+        "google": api_keys.get("google") or os.getenv("GOOGLE_API_KEY"),
+        "tavily": os.getenv("TAVILY_API_KEY"),
+        "firecrawl": os.getenv("FIRECRAWL_API_KEY"),
+        "serp": os.getenv("SERPAPI_API_KEY"),
+    }
+    
+    # Remove None values
+    return {k: v for k, v in tokens.items() if v is not None}
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                base_mcp_url.rstrip("/") + "/oauth/token",
-                headers={"Content-Type": "application/x-www-form-urlencoded"},
-                data=form_data,
-            ) as token_response:
-                if token_response.status == 200:
-                    token_data = await token_response.json()
-                    return token_data
-                else:
-                    response_text = await token_response.text()
-                    logging.error(f"Token exchange failed: {response_text}")
-    except Exception as e:
-        logging.error(f"Error during token exchange: {e}")
-
+def get_model_api_key(model_name: str, tokens: Dict[str, str]) -> Optional[str]:
+    """
+    Get the appropriate API key for a given model.
+    
+    Args:
+        model_name: Name of the model (e.g., "openai:gpt-4", "anthropic:claude-3")
+        tokens: Dictionary of available API tokens
+    
+    Returns:
+        API key string or None if not found
+    """
+    model_lower = model_name.lower()
+    
+    if "anthropic" in model_lower or "claude" in model_lower:
+        return tokens.get("anthropic")
+    elif "openai" in model_lower or "gpt" in model_lower:
+        return tokens.get("openai")
+    elif "google" in model_lower or "gemini" in model_lower:
+        return tokens.get("google")
+    
     return None
 
+# =============================================================================
+# USAGE EXAMPLES
+# =============================================================================
 
-async def get_tokens(config: RunnableConfig):
-    store = get_store()
-    thread_id = config.get("configurable", {}).get("thread_id")
-    if not thread_id:
-        return None
+"""
+# Example 1: Import and use specific tool categories
+from suitecrm_tools import CORE_CRM_TOOLS, OM_BOV_TOOLS
+agent_tools = CORE_CRM_TOOLS + OM_BOV_TOOLS
 
-    user_id = config.get("metadata", {}).get("owner")
-    if not user_id:
-        return None
+# Example 2: Import by category dynamically
+from suitecrm_tools import get_tools_by_category
+crm_tools = get_tools_by_category('core_crm')
+doc_tools = get_tools_by_category('documents')
 
-    tokens = await store.aget((user_id, "tokens"), "data")
-    if not tokens:
-        return None
+# Example 3: Import all tools (backward compatible)
+from suitecrm_tools import CRM_TOOLS
+agent_tools = CRM_TOOLS
 
-    expires_in = tokens.value.get("expires_in")  # seconds until expiration
-    created_at = tokens.created_at  # datetime of token creation
+# Example 4: Import specific tools directly
+from suitecrm_tools.core_crm import get_contacts, get_deals
+from suitecrm_tools.om_bov import generate_om_content
 
-    from datetime import datetime, timedelta, timezone
-
-    current_time = datetime.now(timezone.utc)
-    expiration_time = created_at + timedelta(seconds=expires_in)
-
-    if current_time > expiration_time:
-        # Tokens have expired, delete them
-        await store.adelete((user_id, "tokens"), "data")
-        return None
-
-    return tokens.value
-
-
-async def set_tokens(config: RunnableConfig, tokens: dict[str, Any]):
-    store = get_store()
-    thread_id = config.get("configurable", {}).get("thread_id")
-    if not thread_id:
-        return
-
-    user_id = config.get("metadata", {}).get("owner")
-    if not user_id:
-        return
-
-    await store.aput((user_id, "tokens"), "data", tokens)
-    return
-
-
-async def fetch_tokens(config: RunnableConfig) -> dict[str, Any]:
-    """
-    Fetch MCP access token if it doesn't already exist in the store.
-
-    Args:
-        config: The runnable configuration
-
-    Raises:
-        ValueError: If required configuration is missing
-    """
-
-    current_tokens = await get_tokens(config)
-    if current_tokens:
-        return current_tokens
-
-    supabase_token = config.get("configurable", {}).get("x-supabase-access-token")
-    if not supabase_token:
-        return None
-
-    mcp_config = config.get("configurable", {}).get("mcp_config")
-    if not mcp_config or not mcp_config.get("url"):
-        return None
-
-    mcp_tokens = await get_mcp_access_token(supabase_token, mcp_config.get("url"))
-
-    await set_tokens(config, mcp_tokens)
-    return mcp_tokens
+# Example 5: Use agent with configuration
+config = {
+    "configurable": {
+        "model_name": "openai:gpt-4o",
+        "agent_mode": "chat_copilot",
+        "user_id": "broker_123"
+    }
+}
+"""
