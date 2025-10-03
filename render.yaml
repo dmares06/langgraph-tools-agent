@@ -3,8 +3,8 @@ services:
     name: langgraph-tools-agent
     runtime: python
     plan: starter  # or free tier
-    buildCommand: pip install uv && uv sync
-    startCommand: langgraph dev --config ./langgraph.json --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -e . # Changed from uv sync
+    startCommand: langgraph serve --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         sync: false  # Add manually in dashboard
@@ -25,7 +25,7 @@ services:
       - key: LANGCHAIN_API_KEY
         sync: false
       - key: LANGSMITH_TRACING
-        sync: false
+        sync: true
       - key: LANGSMITH_ENDPOINT
         sync: false
       - key: LANGSMITH_API_KEY

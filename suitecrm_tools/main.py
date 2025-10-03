@@ -3,11 +3,18 @@
 # Import all tool modules
 from .core_crm import (
     get_broker_profile,
-    get_contacts, 
+    get_contacts,
     get_deals,
     get_listings,
     get_recent_inquiries,
-    get_campaigns_performance
+    get_campaigns_performance,
+    # Write operations
+    create_contact,
+    update_contact,
+    create_deal,
+    update_deal,
+    create_listing,
+    update_listing,
 )
 
 from .documents import (
@@ -31,17 +38,40 @@ from .om_bov import (
 
 from .productivity import (
     get_calendar_events,
-    get_tasks
+    get_tasks,
+    create_task,
+    update_task,
+    create_note,
+    update_note,
+    create_calendar_event,
+    update_calendar_event,
 )
 
-# Organized tool collections for easy access
+PRODUCTIVITY_TOOLS = [
+    get_calendar_events,
+    get_tasks,
+    create_task,
+    update_task,
+    create_note,
+    update_note,
+    create_calendar_event,
+    update_calendar_event,
+]
+
+# Update tool collections
 CORE_CRM_TOOLS = [
     get_broker_profile,
     get_contacts,
-    get_deals, 
+    get_deals,
     get_listings,
     get_recent_inquiries,
-    get_campaigns_performance
+    get_campaigns_performance,
+    create_contact,
+    update_contact,
+    create_deal,
+    update_deal,
+    create_listing,
+    update_listing,
 ]
 
 DOCUMENT_TOOLS = [
@@ -61,11 +91,6 @@ OM_BOV_TOOLS = [
     research_market_data,
     generate_om_content,
     review_om_quality
-]
-
-PRODUCTIVITY_TOOLS = [
-    get_calendar_events,
-    get_tasks
 ]
 
 # Complete tools list (maintain backward compatibility)
