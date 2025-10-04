@@ -1,35 +1,64 @@
 services:
+  # Single LangGraph Service - All Agents
   - type: web
-    name: langgraph-tools-agent
+    name: langgraph-agents
     runtime: python
-    plan: starter  # or free tier
-    buildCommand: pip install -e . # Changed from uv sync
+    plan: starter
+    buildCommand: pip install -e .
     startCommand: langgraph serve --host 0.0.0.0 --port $PORT
     envVars:
+      # Supabase
       - key: DATABASE_URL
-        sync: false  # Add manually in dashboard
+        sync: false
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY
         sync: false
+      
+      # LLM APIs
       - key: OPENAI_API_KEY
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      
+      # Search/Web Tools (Lead Gen)
       - key: FIRECRAWL_API_KEY
         sync: false
       - key: TAVILY_API_KEY
         sync: false
       - key: SERP_API_KEY
         sync: false
+      
+      # LangSmith (Observability)
       - key: LANGCHAIN_API_KEY
         sync: false
       - key: LANGSMITH_TRACING
-        sync: true
+        value: "true"
       - key: LANGSMITH_ENDPOINT
-        sync: false
+        value: "https://api.smith.langchain.com"
       - key: LANGSMITH_API_KEY
         sync: false
       - key: LANGSMITH_PROJECT
+        value: "suitecre-agents"
+      
+      # Workflow Agents (NEW)
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: workflow-redis
+          property: connectionString
+      - key: CREDENTIAL_ENCRYPTION_KEY
         sync: false
+      - key: OAUTH_REDIRECT_BASE
+        sync: false
+    
     healthCheckPath: /health
+
+  # Redis for Workflow Rate Limiting
+  - type: redis
+    name: workflow-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []

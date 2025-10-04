@@ -1,11 +1,13 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "agent": "./tools_agent/agent.py:graph"
+    "nexa": "./tools_agent/agent.py:graph",
+    "lead_generation": "./suitecrm_tools/lead_gen_agent.py:graph",
+    "workflow_automation": "./workflow_agents/supervisor.py:workflow_supervisor"
   },
   "env": ".env",
-  "python_version": "3.11",
-  "auth": {
-    "path": "./tools_agent/security/auth.py:auth"
+  
+  "store": {
+    "class": "langgraph.store.memory.InMemoryStore"
   }
 }
