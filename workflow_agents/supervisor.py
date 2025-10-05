@@ -44,58 +44,69 @@ def create_supervisor_graph():
     )
     
     # Define routing logic
-    def route_to_agent(state: WorkflowAgentState) -> Literal["builder", "validator", "explainer", "data_mapper", "end"]:
-        """
-        Determine which agent should handle the request.
+    # Define routing logic
+def route_to_agent(state: WorkflowAgentState) -> Literal["builder", "validator", "explainer", "data_mapper", "end"]:
+    """
+    Determine which agent should handle the request.
+    
+    Args:
+        state: Current state
         
-        Args:
-            state: Current state
-            
-        Returns:
-            Agent name to route to
-        """
-        messages = state.get("messages", [])
-        if not messages:
-            return "end"
-        
-        last_message = messages[-1]
+    Returns:
+        Agent name to route to
+    """
+    messages = state.get("messages", [])
+    if not messages:
+        return "end"
+    
+    last_message = messages[-1]
+    
+    # Handle both dict and Message object formats
+    if hasattr(last_message, 'content'):
+        # It's a Message object
+        content = last_message.content.lower()
+    elif isinstance(last_message, dict):
+        # It's a dict
         content = last_message.get("content", "").lower()
-        
-        # Check for explicit routing hints in state
-        if state.get("current_agent"):
-            return state["current_agent"]
-        
-        # Route based on keywords
-        # Builder keywords
-        if any(word in content for word in [
-            "create", "build", "make", "add", "edit", "modify", "update",
-            "set up", "new workflow", "automation", "trigger", "action"
-        ]):
-            return "builder"
-        
-        # Validator keywords
-        if any(word in content for word in [
-            "validate", "check", "test", "ready", "activate",
-            "errors", "issues", "problems", "fix", "dry run"
-        ]):
-            return "validator"
-        
-        # Explainer keywords
-        if any(word in content for word in [
-            "why", "what happened", "explain", "debug", "error",
-            "didn't run", "failed", "logs", "history"
-        ]):
-            return "explainer"
-        
-        # Data Mapper keywords
-        if any(word in content for word in [
-            "map", "match", "contact", "find", "lookup",
-            "email", "address", "entity"
-        ]):
-            return "data_mapper"
-        
-        # Default to builder for ambiguous cases
+    else:
+        # Fallback
+        content = str(last_message).lower()
+    
+    # Check for explicit routing hints in state
+    if state.get("current_agent"):
+        return state["current_agent"]
+    
+    # Route based on keywords
+    # Builder keywords
+    if any(word in content for word in [
+        "create", "build", "make", "add", "edit", "modify", "update",
+        "set up", "new workflow", "automation", "trigger", "action"
+    ]):
         return "builder"
+    
+    # Validator keywords
+    if any(word in content for word in [
+        "validate", "check", "test", "ready", "activate",
+        "errors", "issues", "problems", "fix", "dry run"
+    ]):
+        return "validator"
+    
+    # Explainer keywords
+    if any(word in content for word in [
+        "why", "what happened", "explain", "debug", "error",
+        "didn't run", "failed", "logs", "history"
+    ]):
+        return "explainer"
+    
+    # Data Mapper keywords
+    if any(word in content for word in [
+        "map", "match", "contact", "find", "lookup",
+        "email", "address", "entity"
+    ]):
+        return "data_mapper"
+    
+    # Default to builder for ambiguous cases
+    return "builder"
     
     # Supervisor node
     async def supervisor_node(state: WorkflowAgentState):

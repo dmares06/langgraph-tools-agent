@@ -52,6 +52,7 @@ class WorkflowAgentState(TypedDict):
 class WorkflowBuilderState(TypedDict):
     """State specific to Builder Agent."""
     messages: Annotated[list[AnyMessage], add_messages]
+    remaining_steps: int  # ADD THIS LINE - Required by create_react_agent
     flow_id: str | None
     user_intent: dict | None  # Parsed intent from NL
     selected_connectors: list[str] | None  # Which connectors to use
@@ -63,6 +64,7 @@ class WorkflowBuilderState(TypedDict):
 class WorkflowValidatorState(TypedDict):
     """State specific to Validator Agent."""
     messages: Annotated[list[AnyMessage], add_messages]
+    remaining_steps: int  # ADD THIS LINE
     flow_id: str
     validation_results: dict | None
     issues_found: list[dict] | None
@@ -72,6 +74,7 @@ class WorkflowValidatorState(TypedDict):
 class WorkflowExplainerState(TypedDict):
     """State specific to Explainer Agent."""
     messages: Annotated[list[AnyMessage], add_messages]
+    remaining_steps: int  # ADD THIS LINE
     flow_id: str | None
     run_id: str | None
     run_logs: list[dict] | None
@@ -81,7 +84,8 @@ class WorkflowExplainerState(TypedDict):
 class WorkflowDataMapperState(TypedDict):
     """State specific to Data Mapper Agent."""
     messages: Annotated[list[AnyMessage], add_messages]
-    source_data: dict  # Data to map
-    target_entities: list[str]  # CRM entity types to map to
-    matches: list[dict] | None  # Found matches
-    confidence_threshold: float  # Minimum confidence for auto-mapping
+    remaining_steps: int  # ADD THIS LINE
+    source_data: dict
+    target_entities: list[str]
+    matches: list[dict] | None
+    confidence_threshold: float
