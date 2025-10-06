@@ -18,6 +18,7 @@ class WorkflowAgentState(TypedDict):
     """
     # Message history (core state)
     messages: Annotated[list[AnyMessage], add_messages]
+    remaining_steps: int  # ADD THIS LINE
     
     # Workflow context
     workflow_type: Literal["automation", "pipeline"]  # Which type of workflow
