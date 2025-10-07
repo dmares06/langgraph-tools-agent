@@ -12,39 +12,15 @@ from langgraph.types import Command
 from workflow_agents.config import config
 from workflow_agents.constants import SUPERVISOR_PROMPT
 from workflow_agents.state import WorkflowAgentState
-from workflow_agents.agents import (
-    invoke_builder_agent,
-    invoke_validator_agent,
-    invoke_explainer_agent,
-    invoke_data_mapper_agent
-)
+from workflow_agents.agents.builder import invoke_builder_agent
+from workflow_agents.agents.validator import invoke_validator_agent
+from workflow_agents.agents.explainer import invoke_explainer_agent
+from workflow_agents.agents.data_mapper import invoke_data_mapper_agent
 
 logger = logging.getLogger(__name__)
 
 
-def create_supervisor_graph():
-    """
-    Create the Supervisor graph that routes to specialist agents.
-    
-    The supervisor analyzes user requests and delegates to:
-    - Builder Agent: Create/edit workflows
-    - Validator Agent: Validate workflows
-    - Explainer Agent: Explain runs and debug
-    - Data Mapper Agent: Map external data to CRM
-    
-    Returns:
-        Compiled StateGraph
-    """
-    
-    # Initialize supervisor LLM
-    supervisor_model = init_chat_model(
-        config.model_name,
-        temperature=0.3,
-        max_tokens=2000
-    )
-    
-    # Define routing logic
-    # Define routing logic
+# MOVE THIS OUTSIDE - at module level
 def route_to_agent(state: WorkflowAgentState) -> Literal["builder", "validator", "explainer", "data_mapper", "end"]:
     """
     Determine which agent should handle the request.
@@ -63,13 +39,22 @@ def route_to_agent(state: WorkflowAgentState) -> Literal["builder", "validator",
     
     # Handle both dict and Message object formats
     if hasattr(last_message, 'content'):
-        # It's a Message object
-        content = last_message.content.lower()
+        content = last_message.content
+        if isinstance(content, list):
+            content = " ".join([
+                block.get("text", "") if isinstance(block, dict) else str(block)
+                for block in content
+            ])
+        content = str(content).lower()
     elif isinstance(last_message, dict):
-        # It's a dict
-        content = last_message.get("content", "").lower()
+        content = last_message.get("content", "")
+        if isinstance(content, list):
+            content = " ".join([
+                block.get("text", "") if isinstance(block, dict) else str(block)
+                for block in content
+            ])
+        content = str(content).lower()
     else:
-        # Fallback
         content = str(last_message).lower()
     
     # Check for explicit routing hints in state
@@ -77,42 +62,51 @@ def route_to_agent(state: WorkflowAgentState) -> Literal["builder", "validator",
         return state["current_agent"]
     
     # Route based on keywords
-    # Builder keywords
     if any(word in content for word in [
         "create", "build", "make", "add", "edit", "modify", "update",
         "set up", "new workflow", "automation", "trigger", "action"
     ]):
         return "builder"
     
-    # Validator keywords
     if any(word in content for word in [
         "validate", "check", "test", "ready", "activate",
         "errors", "issues", "problems", "fix", "dry run"
     ]):
         return "validator"
     
-    # Explainer keywords
     if any(word in content for word in [
         "why", "what happened", "explain", "debug", "error",
         "didn't run", "failed", "logs", "history"
     ]):
         return "explainer"
     
-    # Data Mapper keywords
     if any(word in content for word in [
         "map", "match", "contact", "find", "lookup",
         "email", "address", "entity"
     ]):
         return "data_mapper"
     
-    # Default to builder for ambiguous cases
     return "builder"
+
+
+def create_supervisor_graph():
+    """
+    Create the Supervisor graph that routes to specialist agents.
+    
+    Returns:
+        Compiled StateGraph
+    """
+    
+    # Initialize supervisor LLM
+    supervisor_model = init_chat_model(
+        config.model_name,
+        temperature=0.3,
+        max_tokens=2000
+    )
     
     # Supervisor node
     async def supervisor_node(state: WorkflowAgentState):
-        """
-        Supervisor analyzes request and routes appropriately.
-        """
+        """Supervisor analyzes request and routes appropriately."""
         messages = state.get("messages", [])
         
         if not messages:
@@ -154,7 +148,7 @@ def route_to_agent(state: WorkflowAgentState) -> Literal["builder", "validator",
     # Conditional routing from supervisor
     workflow.add_conditional_edges(
         "supervisor",
-        route_to_agent,
+        route_to_agent,  # Now this is defined at module level
         {
             "builder": "builder",
             "validator": "validator",

@@ -1,6 +1,6 @@
 """SuiteCRE CRM Tools - Complete toolkit for commercial real estate professionals."""
 
-from .main import *
+from .suitecrm_tools.main import *
 
 __version__ = "1.0.0"
 __all__ = [
