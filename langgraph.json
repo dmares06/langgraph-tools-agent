@@ -2,8 +2,7 @@
   "dependencies": ["."],
   "graphs": {
     "nexa": "./tools_agent/agent.py:graph",
-    "lead_generation": "./tools_agent/lead_gen_agent.py:graph",
-    "workflow_automation": "./workflow_agents/supervisor.py:workflow_supervisor"
+    "lead_generation": "./tools_agent/lead_gen_agent.py:graph"
   },
   "env": ".env",
   "store": {

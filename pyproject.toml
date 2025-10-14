@@ -1,7 +1,7 @@
 [project]
 name = "suitecre_agents"
 version = "1.0.0"
-description = "LangGraph multi-agent system: Nexa, Lead Gen, and Workflow Automation"
+description = "LangGraph multi-agent system: Nexa and Lead Gen agents"
 authors = [
     { name = "SuiteCRE" }, 
 ]
@@ -31,13 +31,10 @@ dependencies = [
     "tavily-python>=0.3.0",
     "google-search-results>=2.4.2",
     
-    # Workflow Agents Tools
-    "redis>=5.0.0",
-    "cryptography>=41.0.0",
 ]
 
 [tool.setuptools]
-packages = ["tools_agent", "suitecrm_tools", "workflow_agents"]
+packages = ["tools_agent", "suitecrm_tools"]
 
 [dependency-groups]
 dev = [
